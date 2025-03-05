@@ -1,0 +1,7 @@
+{
+  "workbench.colorTheme": "Default Light+",
+  "workbench.colorCustomizations": {
+    "titleBar.activeBackground": "#5d5dd7",
+    "titleBar.activeForeground": "#ffffff"
+  }
+}
