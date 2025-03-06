@@ -3,3 +3,7 @@
 *.gz
 *.pyc
 __pycache__/
+
+.venv/*
+.env/*
+dataset/*
