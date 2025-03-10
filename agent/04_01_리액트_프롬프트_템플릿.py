@@ -1,11 +1,12 @@
 import os
 import ssl
+import warnings
 from langchain import hub
 from langchain_community.utilities.serpapi import SerpAPIWrapper
 from langchain_experimental.tools import PythonREPLTool
 from langchain_core.tools import Tool
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import create_react_agent, AgentExecutor
+from langchain.agents import create_react_agent, create_structured_chat_agent, create_openai_functions_agent, AgentExecutor
 from langchain_community.tools import (
     WikipediaQueryRun,
     DuckDuckGoSearchRun,
@@ -22,6 +23,9 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 # 환경 변수 설정
 load_dotenv()
+
+# LangSmith 경고 무시
+warnings.filterwarnings("ignore", category=UserWarning, module="langsmith.client")
 
 # 1. 기본 LLM 모델 설정
 # Gemini Pro 모델을 사용하여 에이전트의 두뇌 역할을 할 LLM을 초기화
@@ -68,19 +72,25 @@ tools = [
 ]
 
 # 3. 프롬프트 템플릿 가져오기
-# ReAct 프레임워크를 사용하는 에이전트를 위한 프롬프트 템플릿
-# prompt = hub.pull("hwchase17/react") # ReAct 프롬프트
-# prompt = hub.pull("hwchase17/openai-functions-agent") # OpenAI 함수 기반 프롬프트
-prompt = hub.pull("hwchase17/structured-chat-agent") # 구조화된 채팅 프롬프트
-# prompt = hub.pull("hwchase17/react-zero-shot") # 제로샷 ReAct 프롬프트
+prompt = hub.pull("hwchase17/react")
+
+# 프롬프트 템플릿 변수 설정
+prompt = prompt.partial(
+    tool_names=", ".join([tool.name for tool in tools]),
+    tools="\n".join([f"{tool.name}: {tool.description}" for tool in tools])
+)
 
 # 4. ReAct 에이전트 생성
-# LLM, 도구, 프롬프트를 조합하여 에이전트 생성
 agent = create_react_agent(llm, tools, prompt)
 
 # 5. 에이전트 실행기 생성
 # 실제로 에이전트를 실행할 수 있는 실행기 생성
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+agent_executor = AgentExecutor(
+    agent=agent, 
+    tools=tools, 
+    verbose=True,
+    handle_parsing_errors=True  # 파싱 에러 처리 옵션 추가
+)
 
 # 6. 에이전트 테스트
 def test_agent():
@@ -101,6 +111,14 @@ def test_agent():
         print("\n디렉토리 목록:", result3["output"])
     except Exception as e:
         print("디렉토리 목록 조회 중 에러 발생:", str(e))
+
+# 2. Structured Chat 프롬프트 사용시
+prompt = hub.pull("hwchase17/structured-chat-agent")
+agent = create_structured_chat_agent(llm, tools, prompt)
+
+# 3. OpenAI Functions 프롬프트 사용시
+prompt = hub.pull("hwchase17/openai-functions-agent")
+agent = create_openai_functions_agent(llm, tools, prompt)
 
 if __name__ == "__main__":
     test_agent()

@@ -6,14 +6,13 @@ from langchain_experimental.tools import PythonREPLTool
 from langchain_core.tools import Tool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.agents import create_react_agent, AgentExecutor
+from dotenv import load_dotenv
 
 # SSL 검증 비활성화
 ssl._create_default_https_context = ssl._create_unverified_context
 
 # 환경 변수 설정
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "agent/api-key.json"
-os.environ["SERPAPI_API_KEY"] = "7326a483d8e7f2a32492627bd1f4de6df90b52deb1ea77be91ec17be6cd1df3b"  # https://serpapi.com 에서 무료 API 키 발급
-os.environ['PYTHONHTTPSVERIFY'] = '0'
+load_dotenv()
 
 # 1. 기본 LLM 모델 설정
 # Gemini Pro 모델을 사용하여 에이전트의 두뇌 역할을 할 LLM을 초기화

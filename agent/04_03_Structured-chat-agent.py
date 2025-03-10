@@ -1,11 +1,12 @@
 import os
 import ssl
+import warnings
 from langchain import hub
 from langchain_community.utilities.serpapi import SerpAPIWrapper
 from langchain_experimental.tools import PythonREPLTool
 from langchain_core.tools import Tool
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import create_react_agent, AgentExecutor
+from langchain.agents import create_structured_chat_agent, AgentExecutor  # create_react_agent 대신
 from langchain_community.tools import (
     WikipediaQueryRun,
     DuckDuckGoSearchRun,
@@ -15,21 +16,20 @@ from langchain_community.tools import (
     ListDirectoryTool,
 )
 from langchain_community.utilities import WikipediaAPIWrapper
-
+from dotenv import load_dotenv
 # SSL 검증 비활성화
 ssl._create_default_https_context = ssl._create_unverified_context
 
+# LangSmith 경고 무시
+warnings.filterwarnings("ignore", category=UserWarning, module="langsmith.client")
+
 # 환경 변수 설정
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "agent/api-key.json"
-os.environ["SERPAPI_API_KEY"] = "7326a483d8e7f2a32492627bd1f4de6df90b52deb1ea77be91ec17be6cd1df3b"  # https://serpapi.com 에서 무료 API 키 발급
-os.environ['PYTHONHTTPSVERIFY'] = '0'
+load_dotenv()
 
 # 1. 기본 LLM 모델 설정
-# Gemini Pro 모델을 사용하여 에이전트의 두뇌 역할을 할 LLM을 초기화
 llm = ChatGoogleGenerativeAI(model="models/gemini-1.5-pro")
 
 # 2. 도구(Tools) 정의
-# 에이전트가 사용할 수 있는 도구들을 정의
 tools = [
     Tool(
         name="웹검색",
@@ -69,20 +69,23 @@ tools = [
 ]
 
 # 3. 프롬프트 템플릿 가져오기
-prompt = hub.pull("hwchase17/react")  # ReAct 프롬프트로 변경
-# prompt = hub.pull("hwchase17/structured-chat-agent")  # 구조화된 채팅
+prompt = hub.pull("hwchase17/structured-chat-agent")  # 더 자연스러운 대화형 상호작용에 최적화
 
-# 4. ReAct 에이전트 생성
-# LLM, 도구, 프롬프트를 조합하여 에이전트 생성
-agent = create_react_agent(llm, tools, prompt) # 랭체인에서 제공하는 프롬프트 템플릿을 사용하여 에이전트 생성
+# 프롬프트 템플릿 변수 설정
+prompt = prompt.partial(
+    tool_names=", ".join([tool.name for tool in tools]),
+    tools="\n".join([f"{tool.name}: {tool.description}" for tool in tools])
+)
+
+# 4. Structured Chat 에이전트 생성
+agent = create_structured_chat_agent(llm, tools, prompt)
 
 # 5. 에이전트 실행기 생성
-# 실제로 에이전트를 실행할 수 있는 실행기 생성
 agent_executor = AgentExecutor(
     agent=agent, 
     tools=tools, 
     verbose=True,
-    handle_parsing_errors=True  # 파싱 에러 처리 옵션 추가
+    handle_parsing_errors=True
 )
 
 # 6. 에이전트 테스트
@@ -106,5 +109,4 @@ def test_agent():
         print("디렉토리 목록 조회 중 에러 발생:", str(e))
 
 if __name__ == "__main__":
-    test_agent()
-
+    test_agent() 

@@ -15,14 +15,13 @@ from langchain_community.tools import (
     ListDirectoryTool,
 )
 from langchain_community.utilities import WikipediaAPIWrapper
+from dotenv import load_dotenv
+
+# .env 파일에서 환경 변수 로드
+load_dotenv()
 
 # SSL 검증 비활성화
 ssl._create_default_https_context = ssl._create_unverified_context
-
-# 환경 변수 설정
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "agent/api-key.json"
-os.environ["SERPAPI_API_KEY"] = "7326a483d8e7f2a32492627bd1f4de6df90b52deb1ea77be91ec17be6cd1df3b"  # https://serpapi.com 에서 무료 API 키 발급
-os.environ['PYTHONHTTPSVERIFY'] = '0'
 
 # 1. 기본 LLM 모델 설정
 # Gemini Pro 모델을 사용하여 에이전트의 두뇌 역할을 할 LLM을 초기화
@@ -70,9 +69,9 @@ tools = [
 
 # 3. 프롬프트 템플릿 가져오기
 # ReAct 프레임워크를 사용하는 에이전트를 위한 프롬프트 템플릿
-# prompt = hub.pull("hwchase17/react") # ReAct 프롬프트
-# prompt = hub.pull("hwchase17/openai-functions-agent") # OpenAI 함수 기반 프롬프트
-prompt = hub.pull("hwchase17/structured-chat-agent") # 구조화된 채팅 프롬프트
+prompt = hub.pull("hwchase17/react") # ReAct 프롬프트 -> 정상 작동
+# prompt = hub.pull("hwchase17/openai-functions-agent") # OpenAI 함수 기반 프롬프트 -> 그냥 바로 에러 발생
+# prompt = hub.pull("hwchase17/structured-chat-agent") # 구조화된 채팅 프롬프트 -> 이 프롬프트 템플릿 정상 작동안함... (수행 잘 못함)
 # prompt = hub.pull("hwchase17/react-zero-shot") # 제로샷 ReAct 프롬프트
 
 # 4. ReAct 에이전트 생성
